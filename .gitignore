@@ -1,4 +1,4 @@
 /.metadata
 /robots/.settings
 /robots/bin
-eclipse.bat
+eclipse.bat!/pom.xml
