@@ -78,12 +78,18 @@ public class MainApplicationFrame extends JFrame {
 //        menuItem.setActionCommand("quit");
 ////        menuItem.addActionListener(this);
 //        menu.add(menuItem);
-// 
+//
 //        return menuBar;
 //    }
 
     private JMenuBar generateMenuBar() {
         JMenuBar menuBar = new JMenuBar();
+        menuBar.add(lookAndFeelMenu());
+        menuBar.add(testMenu());
+        return menuBar;
+    }
+
+    private JMenu lookAndFeelMenu() {
 
         JMenu lookAndFeelMenu = createMenu("Режим отображения", KeyEvent.VK_V,
                 "Управление режимом отображения приложения",
@@ -100,13 +106,13 @@ public class MainApplicationFrame extends JFrame {
                     this.invalidate();
                 }));
 
-        JMenu testMenu = createMenu("Тесты", KeyEvent.VK_T, "Тестовые команды",
+        return lookAndFeelMenu;
+    }
+
+    private JMenu testMenu() {
+        return createMenu("Тесты", KeyEvent.VK_T, "Тестовые команды",
                 createItem("Сообщение в лог",
                         (event) -> Logger.debug("Новая строка")));
-
-        menuBar.add(lookAndFeelMenu);
-        menuBar.add(testMenu);
-        return menuBar;
     }
 
     private JMenuItem createItem(String data, ActionListener actionListener) {
@@ -114,7 +120,6 @@ public class MainApplicationFrame extends JFrame {
         jMenuItem.addActionListener(actionListener);
         return jMenuItem;
     }
-
 
     private JMenu createMenu(String data, int value, String textDescription, JMenuItem item) {
         JMenu menu = new JMenu(data);
