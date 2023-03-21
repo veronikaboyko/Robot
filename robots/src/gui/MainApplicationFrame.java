@@ -115,6 +115,7 @@ public class MainApplicationFrame extends JFrame {
         return jMenuItem;
     }
 
+
     private JMenu createMenu(String data, int value, String textDescription, JMenuItem item) {
         JMenu menu = new JMenu(data);
         menu.setMnemonic(value);
