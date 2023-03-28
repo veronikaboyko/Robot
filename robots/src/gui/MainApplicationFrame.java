@@ -2,10 +2,13 @@ package gui;
 
 import java.awt.Dimension;
 import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 
+
 import javax.swing.*;
+
 
 import log.Logger;
 
@@ -31,7 +34,6 @@ public class MainApplicationFrame extends JFrame {
         addWindow(logWindow);
 
         GameWindow gameWindow = new GameWindow();
-        gameWindow.setSize(400, 400);
         addWindow(gameWindow);
 
         setJMenuBar(generateMenuBar());
@@ -86,6 +88,7 @@ public class MainApplicationFrame extends JFrame {
         JMenuBar menuBar = new JMenuBar();
         menuBar.add(lookAndFeelMenu());
         menuBar.add(testMenu());
+        menuBar.add((exitButton()));
         return menuBar;
     }
 
@@ -115,6 +118,23 @@ public class MainApplicationFrame extends JFrame {
                         (event) -> Logger.debug("Новая строка")));
     }
 
+    private JMenuItem exitButton() {
+        JMenu exitMenu = new JMenu("Выход");
+        JMenuItem exitItem = new JMenuItem("Выйти");
+        exitItem.addActionListener(
+                e -> {
+                    int answer =
+                            JOptionPane.showConfirmDialog(null, "Вы действительно хотите выйти?", "Подтверждение", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                    if (answer == 0) {
+                        System.exit(0);
+                    }
+                }
+        );
+        exitMenu.add(exitItem);
+        return exitMenu;
+    }
+
+
     private JMenuItem createItem(String data, ActionListener actionListener) {
         JMenuItem jMenuItem = new JMenuItem(data, KeyEvent.VK_S);
         jMenuItem.addActionListener(actionListener);
@@ -133,7 +153,8 @@ public class MainApplicationFrame extends JFrame {
         try {
             UIManager.setLookAndFeel(className);
             SwingUtilities.updateComponentTreeUI(this);
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException |
+                 UnsupportedLookAndFeelException e) {
             // just ignore
         }
     }

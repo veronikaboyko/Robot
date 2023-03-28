@@ -2,7 +2,7 @@ package log;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Что починить:
@@ -17,14 +17,14 @@ public class LogWindowSource
 {
     private final int m_iQueueLength;
     
-    private final ArrayBlockingQueue<LogEntry> m_messages;
+    private final ConcurrentLinkedQueue<LogEntry> m_messages;
     private final ArrayList<LogChangeListener> m_listeners;
     private volatile LogChangeListener[] m_activeListeners;
     
     public LogWindowSource(int iQueueLength) 
     {
         m_iQueueLength = iQueueLength;
-        m_messages = new ArrayBlockingQueue<>(iQueueLength);
+        m_messages = new ConcurrentLinkedQueue<>();
         m_listeners = new ArrayList<>();
     }
     
@@ -49,12 +49,10 @@ public class LogWindowSource
     {
         LogEntry entry = new LogEntry(logLevel, strMessage);
 
-        synchronized (m_messages) {
-            if (m_messages.size() > m_iQueueLength) {
-                m_messages.poll();
-            }
-            m_messages.add(entry);
+        if (m_messages.size() > m_iQueueLength) {
+            m_messages.poll();
         }
+        m_messages.add(entry);
 
         LogChangeListener [] activeListeners = m_activeListeners;
         if (activeListeners == null)
