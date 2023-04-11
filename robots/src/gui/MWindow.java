@@ -24,8 +24,8 @@ public class MWindow extends JInternalFrame {
             public void internalFrameClosing(InternalFrameEvent e) {
                 int option = JOptionPane.showInternalConfirmDialog(
                         MWindow.this,
-                        "Закрыть окно?",
-                        "Подтверждение",
+                        "close the window?",
+                        "confirm",
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.QUESTION_MESSAGE);
 

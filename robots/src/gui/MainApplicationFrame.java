@@ -2,7 +2,6 @@ package gui;
 
 import java.awt.Dimension;
 import java.awt.Toolkit;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 
@@ -119,12 +118,12 @@ public class MainApplicationFrame extends JFrame {
     }
 
     private JMenuItem exitButton() {
-        JMenu exitMenu = new JMenu("Выход");
-        JMenuItem exitItem = new JMenuItem("Выйти");
+        JMenu exitMenu = new JMenu("Exit");
+        JMenuItem exitItem = new JMenuItem("Exit");
         exitItem.addActionListener(
                 e -> {
                     int answer =
-                            JOptionPane.showConfirmDialog(null, "Вы действительно хотите выйти?", "Подтверждение", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                            JOptionPane.showConfirmDialog(null, "Do you really want to leave?", "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
                     if (answer == 0) {
                         System.exit(0);
                     }
