@@ -122,9 +122,8 @@ public class MainApplicationFrame extends JFrame {
         JMenuItem exitItem = new JMenuItem("Exit");
         exitItem.addActionListener(
                 e -> {
-                    int answer =
-                            JOptionPane.showConfirmDialog(null, "Do you really want to leave?", "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-                    if (answer == 0) {
+                    if (WindowClosingHandler.shouldCloseWindow(this)) {
+                        dispose();
                         System.exit(0);
                     }
                 }
