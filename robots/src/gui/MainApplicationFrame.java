@@ -26,6 +26,7 @@ public class MainApplicationFrame extends JFrame {
     LogWindow logWindow;
     GameWindow gameWindow;
     ResourceBundle bundle;
+    String locale = "locale_en_US";
     static Boolean flagLanguage = true;
 
     public MainApplicationFrame() {
@@ -44,7 +45,7 @@ public class MainApplicationFrame extends JFrame {
         gameWindow.setSize(400, 400);
         addWindow(gameWindow);
 
-        bundle = ResourceBundle.getBundle("locale_en_US");
+        bundle = ResourceBundle.getBundle(locale);
         setJMenuBar(generateMenuBar());
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         restoreDesktopState();
@@ -83,28 +84,24 @@ public class MainApplicationFrame extends JFrame {
         JMenuItem ruLocale = createItem(bundle.getString("ruLocale"), KeyEvent.VK_S,
                 (event) -> {
                     Logger.debug("Русский язык");
-                    flagLanguage = false;
                     this.invalidate();
                 });
 
         ruLocale.addActionListener(e -> {
             SwingUtilities.invokeLater(() -> {
-                bundle = ResourceBundle.getBundle("locale_ru_RU");
-                updateLocale(new Locale("ru", "RU", "RUSSIA"));
+                updateLocale("locale_ru_RU", new Locale("ru", "RU", "RUSSIA"));
             });
         });
 
         JMenuItem enLocale = createItem(bundle.getString("enLocale"), KeyEvent.VK_S,
                 (event) -> {
                     Logger.debug("English language");
-                    flagLanguage = true;
                     this.invalidate();
                 });
 
         enLocale.addActionListener(e -> {
             SwingUtilities.invokeLater(() -> {
-                bundle = ResourceBundle.getBundle("locale_en_US");
-                updateLocale(ENGLISH);
+                updateLocale("locale_en_US", ENGLISH);
             });
         });
         locale.add(ruLocale);
@@ -113,7 +110,10 @@ public class MainApplicationFrame extends JFrame {
         return locale;
     }
 
-    private void updateLocale(Locale newLocale) {
+    private void updateLocale(String loc, Locale newLocale) {
+        locale = loc;
+        flagLanguage = locale.equals("locale_en_US");
+        bundle = ResourceBundle.getBundle(locale);
         Locale.setDefault(newLocale);
         menuBar.removeAll();
         generateMenuBar();
@@ -177,7 +177,7 @@ public class MainApplicationFrame extends JFrame {
         }
         try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(Paths.get("window_state.dat")))) {
             out.writeObject(state);
-            out.writeBoolean(flagLanguage);
+            out.writeUTF(locale);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -187,19 +187,10 @@ public class MainApplicationFrame extends JFrame {
         File file = new File("window_state.dat");
         if (file.exists()) {
             JDesktopPane newPane = new JDesktopPane();
-            Locale newLocale;
             String locale;
             try (ObjectInputStream in = new ObjectInputStream(Files.newInputStream(file.toPath()))) {
                 DesktopState state = (DesktopState) in.readObject();
-                flagLanguage = in.readBoolean();
-                if (flagLanguage){
-                    locale = "locale_en_US";
-                    newLocale = ENGLISH;
-                }
-                else {
-                    locale = "locale_ru_RU";
-                    newLocale = new Locale("ru", "RU", "RUSSIA");
-                }
+                locale = in.readUTF();
                 for (DesktopState.FrameState frameState : state.getFrames()) {
                     JInternalFrame frame;
                     if (frameState.returnFrameType().equals("LogWindow"))
@@ -223,10 +214,11 @@ public class MainApplicationFrame extends JFrame {
                         frame.dispose();
                     for (JInternalFrame frame : newPane.getAllFrames())
                         addWindow(frame);
-                    updateLocale(newLocale);
+                    if (locale.equals("locale_en_US"))
+                        updateLocale(locale, ENGLISH);
+                    else
+                        updateLocale(locale, new Locale("ru", "RU", "RUSSIA"));
                 }
-                else
-                    flagLanguage = true;
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
