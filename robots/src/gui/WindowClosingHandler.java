@@ -19,7 +19,7 @@ public class WindowClosingHandler extends InternalFrameAdapter {
 
     public static boolean shouldCloseWindow(Component window) {
         String prop;
-        if (MainApplicationFrame.flagCloseWindow)
+        if (MainApplicationFrame.flagLanguage)
             prop = "locale_en_US";
         else {
             prop = "locale_ru_RU";

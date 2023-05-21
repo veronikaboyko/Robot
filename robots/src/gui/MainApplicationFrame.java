@@ -26,7 +26,7 @@ public class MainApplicationFrame extends JFrame {
     LogWindow logWindow;
     GameWindow gameWindow;
     ResourceBundle bundle;
-    static Boolean flagCloseWindow = true;
+    static Boolean flagLanguage = true;
 
     public MainApplicationFrame() {
         //Make the big window be indented 50 pixels from each edge
@@ -83,29 +83,28 @@ public class MainApplicationFrame extends JFrame {
         JMenuItem ruLocale = createItem(bundle.getString("ruLocale"), KeyEvent.VK_S,
                 (event) -> {
                     Logger.debug("Русский язык");
-                    flagCloseWindow = false;
+                    flagLanguage = false;
+                    this.invalidate();
                 });
 
         ruLocale.addActionListener(e -> {
             SwingUtilities.invokeLater(() -> {
-                Locale.setDefault(new Locale("ru", "RU", "RUSSIA"));
                 bundle = ResourceBundle.getBundle("locale_ru_RU");
-                updateLocale();
+                updateLocale(new Locale("ru", "RU", "RUSSIA"));
             });
         });
 
         JMenuItem enLocale = createItem(bundle.getString("enLocale"), KeyEvent.VK_S,
                 (event) -> {
                     Logger.debug("English language");
-                    flagCloseWindow = true;
+                    flagLanguage = true;
                     this.invalidate();
                 });
 
         enLocale.addActionListener(e -> {
             SwingUtilities.invokeLater(() -> {
-                Locale.setDefault(ENGLISH);
                 bundle = ResourceBundle.getBundle("locale_en_US");
-                updateLocale();
+                updateLocale(ENGLISH);
             });
         });
         locale.add(ruLocale);
@@ -114,7 +113,8 @@ public class MainApplicationFrame extends JFrame {
         return locale;
     }
 
-    private void updateLocale() {
+    private void updateLocale(Locale newLocale) {
+        Locale.setDefault(newLocale);
         menuBar.removeAll();
         generateMenuBar();
         setJMenuBar(menuBar);
@@ -177,6 +177,7 @@ public class MainApplicationFrame extends JFrame {
         }
         try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(Paths.get("window_state.dat")))) {
             out.writeObject(state);
+            out.writeBoolean(flagLanguage);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -186,28 +187,30 @@ public class MainApplicationFrame extends JFrame {
         File file = new File("window_state.dat");
         if (file.exists()) {
             JDesktopPane newPane = new JDesktopPane();
+            Locale newLocale;
+            String locale;
             try (ObjectInputStream in = new ObjectInputStream(Files.newInputStream(file.toPath()))) {
                 DesktopState state = (DesktopState) in.readObject();
+                flagLanguage = in.readBoolean();
+                if (flagLanguage){
+                    locale = "locale_en_US";
+                    newLocale = ENGLISH;
+                }
+                else {
+                    locale = "locale_ru_RU";
+                    newLocale = new Locale("ru", "RU", "RUSSIA");
+                }
                 for (DesktopState.FrameState frameState : state.getFrames()) {
                     JInternalFrame frame;
-                    if (frameState.returnFrameType().equals("LogWindow")) {
+                    if (frameState.returnFrameType().equals("LogWindow"))
                         frame = createLogWindow();
-                    } else {
+                    else
                         frame = new GameWindow();
-                        if (frameState.returnTitle().equals("Game window")) {
-                            bundle = ResourceBundle.getBundle("locale_en_US");
-                            Locale.setDefault(ENGLISH);
-                            flagCloseWindow = true;
-                        } else {
-                            bundle = ResourceBundle.getBundle("locale_ru_RU");
-                            Locale.setDefault(new Locale("ru", "RU", "RUSSIA"));
-                            flagCloseWindow = false;
-                        }
-                    }
                     frameState.restore(frame);
                     newPane.add(frame);
                     frame.setVisible(true);
                 }
+                bundle = ResourceBundle.getBundle(locale);
                 UIManager.put("OptionPane.yesButtonText", bundle.getString("yes"));
                 UIManager.put("OptionPane.noButtonText", bundle.getString("no"));
                 int option = JOptionPane.showConfirmDialog(
@@ -220,8 +223,10 @@ public class MainApplicationFrame extends JFrame {
                         frame.dispose();
                     for (JInternalFrame frame : newPane.getAllFrames())
                         addWindow(frame);
-                    updateLocale();
+                    updateLocale(newLocale);
                 }
+                else
+                    flagLanguage = true;
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }

@@ -46,16 +46,11 @@ public class DesktopState implements Serializable {
         private boolean icon;
         private boolean maximum;
         private boolean closed;
-        private String title;
-        private Locale locale;
 
-        public String returnFrameType(){
+        public String returnFrameType() {
             return frameType;
         }
 
-        public String returnTitle(){
-            return title;
-        }
 
         public FrameState(JInternalFrame frame, String frameType) {
             this.frameType = frameType;
@@ -66,15 +61,11 @@ public class DesktopState implements Serializable {
             icon = frame.isIcon();
             maximum = frame.isMaximum();
             closed = frame.isClosed();
-            title = frame.getTitle();
-            locale = frame.getLocale();
         }
 
         public void restore(JInternalFrame frame) {
             frame.setLocation(x, y);
             frame.setSize(width, height);
-            frame.setTitle(title);
-            frame.setLocale(locale);
             if (icon) {
                 try {
                     frame.setIcon(true);
