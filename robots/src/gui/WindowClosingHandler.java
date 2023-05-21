@@ -4,7 +4,7 @@ import javax.swing.*;
 import javax.swing.event.InternalFrameAdapter;
 import javax.swing.event.InternalFrameEvent;
 import java.awt.*;
-
+import java.util.ResourceBundle;
 
 public class WindowClosingHandler extends InternalFrameAdapter {
 
@@ -18,10 +18,19 @@ public class WindowClosingHandler extends InternalFrameAdapter {
     }
 
     public static boolean shouldCloseWindow(Component window) {
+        String prop;
+        if (MainApplicationFrame.flagCloseWindow)
+            prop = "locale_en_US";
+        else {
+            prop = "locale_ru_RU";
+        }
+        ResourceBundle bundle = ResourceBundle.getBundle(prop);
+        UIManager.put("OptionPane.yesButtonText", bundle.getString("yes"));
+        UIManager.put("OptionPane.noButtonText", bundle.getString("no"));
         int option = JOptionPane.showConfirmDialog(
                 window,
-                "Are you sure you want to close this window?",
-                "Confirm",
+                bundle.getString("exitWindow"),
+                bundle.getString("confirm"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE);
         return option == JOptionPane.YES_OPTION;

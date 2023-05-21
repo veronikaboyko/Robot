@@ -3,6 +3,12 @@ package gui;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
@@ -16,6 +22,11 @@ import static java.util.Locale.ENGLISH;
 
 public class MainApplicationFrame extends JFrame {
     private final JDesktopPane desktopPane = new JDesktopPane();
+    JMenuBar menuBar;
+    LogWindow logWindow;
+    GameWindow gameWindow;
+    ResourceBundle bundle;
+    static Boolean flagCloseWindow = true;
 
     public MainApplicationFrame() {
         //Make the big window be indented 50 pixels from each edge
@@ -26,15 +37,18 @@ public class MainApplicationFrame extends JFrame {
 
         setContentPane(desktopPane);
 
-        LogWindow logWindow = createLogWindow();
+        logWindow = createLogWindow();
         addWindow(logWindow);
 
-        GameWindow gameWindow = new GameWindow();
+        gameWindow = new GameWindow();
         gameWindow.setSize(400, 400);
         addWindow(gameWindow);
 
-        setJMenuBar(generateMenuBar("locale_en_US"));
+        bundle = ResourceBundle.getBundle("locale_en_US");
+        setJMenuBar(generateMenuBar());
         setDefaultCloseOperation(EXIT_ON_CLOSE);
+        restoreDesktopState();
+        pack();
     }
 
     protected LogWindow createLogWindow() {
@@ -53,57 +67,64 @@ public class MainApplicationFrame extends JFrame {
     }
 
 
-    private JMenuBar generateMenuBar(String loc) {
-        ResourceBundle bundle = ResourceBundle.getBundle(loc);
-        JMenuBar menuBar = new JMenuBar();
-        menuBar.add(lookAndFeelMenu(bundle));
-        menuBar.add(locale(bundle));
-        menuBar.add(logMenu(bundle));
-        menuBar.add(exitButton(bundle));
+    private JMenuBar generateMenuBar() {
+        menuBar = new JMenuBar();
+        menuBar.add(lookAndFeelMenu());
+        menuBar.add(locale());
+        menuBar.add(logMenu());
+        menuBar.add(exitButton());
         return menuBar;
     }
 
-    private JMenu locale(ResourceBundle bundle) {
+    private JMenu locale() {
         JMenu locale = createMenu(bundle.getString("locale"), KeyEvent.VK_C, "Локализация",
                 null);
 
         JMenuItem ruLocale = createItem(bundle.getString("ruLocale"), KeyEvent.VK_S,
                 (event) -> {
                     Logger.debug("Русский язык");
-                    this.invalidate();
+                    flagCloseWindow = false;
                 });
 
-        ruLocale.addActionListener(e -> SwingUtilities.invokeLater(() -> {
-            Locale.setDefault(new Locale("ru", "RU", "RUSSIA"));
-            this.removeAll();
-            generateMenuBar("locale_tu_RU");
-            setJMenuBar(getJMenuBar());
-            revalidate();
-            repaint();
-        }));
+        ruLocale.addActionListener(e -> {
+            SwingUtilities.invokeLater(() -> {
+                Locale.setDefault(new Locale("ru", "RU", "RUSSIA"));
+                bundle = ResourceBundle.getBundle("locale_ru_RU");
+                updateLocale();
+            });
+        });
 
         JMenuItem enLocale = createItem(bundle.getString("enLocale"), KeyEvent.VK_S,
                 (event) -> {
-                    Logger.debug("Анлийский язык");
+                    Logger.debug("English language");
+                    flagCloseWindow = true;
                     this.invalidate();
                 });
 
-        enLocale.addActionListener(e -> SwingUtilities.invokeLater(() -> {
-                    Locale.setDefault(ENGLISH);
-                    this.removeAll();
-                    generateMenuBar("locale_en_US");
-                    setJMenuBar(getJMenuBar());
-                    revalidate();
-                    repaint();
-                }
-        ));
+        enLocale.addActionListener(e -> {
+            SwingUtilities.invokeLater(() -> {
+                Locale.setDefault(ENGLISH);
+                bundle = ResourceBundle.getBundle("locale_en_US");
+                updateLocale();
+            });
+        });
         locale.add(ruLocale);
         locale.add(enLocale);
 
         return locale;
     }
 
-    private JMenu lookAndFeelMenu(ResourceBundle bundle) {
+    private void updateLocale() {
+        menuBar.removeAll();
+        generateMenuBar();
+        setJMenuBar(menuBar);
+        for (JInternalFrame frame : desktopPane.getAllFrames())
+            frame.setTitle(bundle.getString(frame.getClass().getSimpleName()));
+        revalidate();
+        repaint();
+    }
+
+    private JMenu lookAndFeelMenu() {
 
         JMenu lookAndFeelMenu = createMenu(bundle.getString("lookAndFeel"), KeyEvent.VK_V,
                 "Управление режимом отображения приложения",
@@ -123,7 +144,7 @@ public class MainApplicationFrame extends JFrame {
         return lookAndFeelMenu;
     }
 
-   private JMenu logMenu(ResourceBundle bundle) {
+    private JMenu logMenu() {
         return createMenu(bundle.getString("logs"), KeyEvent.VK_T, "Тестовые команды",
                 createItem(bundle.getString("logMessage"), KeyEvent.VK_S,
                         (event) -> {
@@ -133,23 +154,78 @@ public class MainApplicationFrame extends JFrame {
                 ));
     }
 
-    private JMenu exitButton(ResourceBundle bundle) {
-        JMenu exit = createMenu(bundle.getString("exit"), KeyEvent.VK_X, "Закрытие приложения",
-                createItem(bundle.getString("exit"), KeyEvent.VK_V,
-                        (event) -> {
-                            Logger.debug("Закрыть приложение");
-                            this.invalidate();
-                        }
-                ));
-        exit.addActionListener(e -> {
-            int result = JOptionPane.showConfirmDialog(MainApplicationFrame.this, "Вы уверены, что хотите выйти?", "Подтверждение выхода", JOptionPane.YES_NO_OPTION);
-            if (result == JOptionPane.YES_OPTION) {
-                dispose();
-                System.exit(0);
-            }
-        });
+    private JMenu exitButton() {
+        JMenu exitMenu = new JMenu(bundle.getString("exit"));
+        JMenuItem exitItem = new JMenuItem(bundle.getString("exit"));
+        exitItem.addActionListener(
+                e -> {
+                    if (WindowClosingHandler.shouldCloseWindow(this)) {
+                        saveDesktopState();
+                        dispose();
+                        System.exit(0);
+                    }
+                }
+        );
+        exitMenu.add(exitItem);
+        return exitMenu;
+    }
 
-        return exit;
+    private void saveDesktopState() {
+        DesktopState state = new DesktopState();
+        for (JInternalFrame frame : desktopPane.getAllFrames()) {
+            state.addFrame(frame);
+        }
+        try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(Paths.get("window_state.dat")))) {
+            out.writeObject(state);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void restoreDesktopState() {
+        File file = new File("window_state.dat");
+        if (file.exists()) {
+            JDesktopPane newPane = new JDesktopPane();
+            try (ObjectInputStream in = new ObjectInputStream(Files.newInputStream(file.toPath()))) {
+                DesktopState state = (DesktopState) in.readObject();
+                for (DesktopState.FrameState frameState : state.getFrames()) {
+                    JInternalFrame frame;
+                    if (frameState.returnFrameType().equals("LogWindow")) {
+                        frame = createLogWindow();
+                    } else {
+                        frame = new GameWindow();
+                        if (frameState.returnTitle().equals("Game window")) {
+                            bundle = ResourceBundle.getBundle("locale_en_US");
+                            Locale.setDefault(ENGLISH);
+                            flagCloseWindow = true;
+                        } else {
+                            bundle = ResourceBundle.getBundle("locale_ru_RU");
+                            Locale.setDefault(new Locale("ru", "RU", "RUSSIA"));
+                            flagCloseWindow = false;
+                        }
+                    }
+                    frameState.restore(frame);
+                    newPane.add(frame);
+                    frame.setVisible(true);
+                }
+                UIManager.put("OptionPane.yesButtonText", bundle.getString("yes"));
+                UIManager.put("OptionPane.noButtonText", bundle.getString("no"));
+                int option = JOptionPane.showConfirmDialog(
+                        this,
+                        bundle.getString("saveWindow"),
+                        bundle.getString("confirm"),
+                        JOptionPane.YES_NO_OPTION);
+                if (option == JOptionPane.YES_OPTION) {
+                    for (JInternalFrame frame : desktopPane.getAllFrames())
+                        frame.dispose();
+                    for (JInternalFrame frame : newPane.getAllFrames())
+                        addWindow(frame);
+                    updateLocale();
+                }
+            } catch (IOException | ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 
@@ -177,4 +253,5 @@ public class MainApplicationFrame extends JFrame {
             // just ignore
         }
     }
+
 }
