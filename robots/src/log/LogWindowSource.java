@@ -2,7 +2,7 @@ package log;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.ArrayDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Что починить:
@@ -15,17 +15,17 @@ import java.util.ArrayDeque;
  */
 public class LogWindowSource
 {
-    private int m_iQueueLength;
+    private final int m_iQueueLength;
     
-    private ArrayDeque<LogEntry> m_messages;
+    private final ConcurrentLinkedQueue<LogEntry> m_messages;
     private final ArrayList<LogChangeListener> m_listeners;
     private volatile LogChangeListener[] m_activeListeners;
     
     public LogWindowSource(int iQueueLength) 
     {
         m_iQueueLength = iQueueLength;
-        m_messages = new ArrayDeque<LogEntry>(iQueueLength);
-        m_listeners = new ArrayList<LogChangeListener>();
+        m_messages = new ConcurrentLinkedQueue<>();
+        m_listeners = new ArrayList<>();
     }
     
     public void registerListener(LogChangeListener listener)
@@ -48,10 +48,12 @@ public class LogWindowSource
     public void append(LogLevel logLevel, String strMessage)
     {
         LogEntry entry = new LogEntry(logLevel, strMessage);
-        if (m_messages.size() == m_iQueueLength){
+
+        if (m_messages.size() > m_iQueueLength) {
             m_messages.poll();
         }
         m_messages.add(entry);
+
         LogChangeListener [] activeListeners = m_activeListeners;
         if (activeListeners == null)
         {
@@ -82,7 +84,7 @@ public class LogWindowSource
             return Collections.emptyList();
         }
         int indexTo = Math.min(startFrom + count, m_messages.size());
-        return new ArrayList<LogEntry>(m_messages).subList(startFrom, indexTo);
+        return new ArrayList<>(m_messages).subList(startFrom, indexTo);
     }
 
     public Iterable<LogEntry> all()
