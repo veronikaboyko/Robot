@@ -1,8 +1,7 @@
 package gui;
 
 import java.awt.BorderLayout;
-import javax.swing.JInternalFrame;
-import javax.swing.JPanel;
+import javax.swing.*;
 
 
 public class GameWindow extends JInternalFrame
@@ -20,5 +19,9 @@ public class GameWindow extends JInternalFrame
         this.setLocation(250, 10);
         this.setSize(400, 400);
 
+    }
+
+    public GameVisualizer returnVisualizer() {
+        return m_visualizer;
     }
 }

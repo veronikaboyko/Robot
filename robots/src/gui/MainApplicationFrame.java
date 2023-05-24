@@ -10,7 +10,11 @@ import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Locale;
+import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 import javax.swing.*;
@@ -30,8 +34,6 @@ public class MainApplicationFrame extends JFrame {
     static Boolean flagLanguage = true;
 
     public MainApplicationFrame() {
-        //Make the big window be indented 50 pixels from each edge
-        //of the screen.
         int inset = 50;
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         setBounds(inset, inset, screenSize.width - inset * 2, screenSize.height - inset * 2);
@@ -42,7 +44,6 @@ public class MainApplicationFrame extends JFrame {
         addWindow(logWindow);
 
         gameWindow = new GameWindow();
-        gameWindow.setSize(400, 400);
         addWindow(gameWindow);
 
         bundle = ResourceBundle.getBundle(locale);
@@ -50,7 +51,28 @@ public class MainApplicationFrame extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         restoreDesktopState();
         pack();
+        checkState();
+
     }
+
+    public void checkState(){
+        Map<String, Boolean> gameState = gameWindow.returnVisualizer().getGameState();
+
+        boolean lose = gameState.getOrDefault("lose", false);
+        boolean win = gameState.getOrDefault("win", false);
+        if (lose) {
+            JOptionPane.showMessageDialog(null, "Game Over!");
+            gameWindow.returnVisualizer().cleanGameState();
+
+        } else if (win) {
+            JOptionPane.showMessageDialog(null, "You Win!");
+            gameWindow.returnVisualizer().cleanGameState();
+        }
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler.schedule(this::checkState, 100, TimeUnit.MILLISECONDS);
+    }
+
+
 
     protected LogWindow createLogWindow() {
         LogWindow logWindow = new LogWindow(Logger.getDefaultLogSource());
@@ -250,5 +272,4 @@ public class MainApplicationFrame extends JFrame {
             // just ignore
         }
     }
-
 }

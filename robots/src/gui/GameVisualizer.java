@@ -6,18 +6,19 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+
 import javax.swing.*;
+import javax.swing.Timer;
 
 public class GameVisualizer extends JPanel implements ActionListener {
     private volatile Point robotPosition = new Point(300, 300);
     private volatile double robotDirection = 0;
-
     private volatile Point targetPosition = new Point(150, 100);
-
     private static final double maxVelocity = 0.1;
     private static final double maxAngVelocity = 0.01;
     private int screenWight;
@@ -25,6 +26,11 @@ public class GameVisualizer extends JPanel implements ActionListener {
 
     private double distance;
     private double angleTo;
+    private ArrayList<Point> towers;
+
+    Map<String, Boolean> gameState = new HashMap<>();
+    private volatile Point gameTargetPosition;
+    private ArrayList<Point> bullets;
 
     public GameVisualizer() {
         Timer timer = new Timer(3, this);
@@ -58,6 +64,58 @@ public class GameVisualizer extends JPanel implements ActionListener {
         });
         setDoubleBuffered(true);
 
+        bullets = new ArrayList<>();
+        gameTargetPosition = generateRandomPositions(1).get(0);
+        towers = generateRandomPositions(10);
+
+        shootBullets();
+    }
+
+    private ArrayList<Point> generateRandomPositions(int count) {
+        Random random = new Random();
+        ArrayList<Point> points = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            int x = random.nextInt(700 - 40) + 20;
+            int y = random.nextInt(700 - 40) + 20;
+            points.add(new Point(x, y));
+        }
+        return points;
+    }
+
+    private void drawGameTarget(Graphics2D g, int x, int y) {
+        g.setColor(Color.MAGENTA);
+        fillOval(g, x, y, 30, 30);
+        g.setColor(Color.BLACK);
+        drawOval(g, x, y, 30, 30);
+    }
+
+    private void drawLets(Graphics2D g) {
+        for (Point point : towers) {
+            g.setColor(Color.GRAY);
+            fillOval(g, point.x, point.y, 30, 30);
+            g.setColor(Color.BLACK);
+            drawOval(g, point.x, point.y, 30, 30);
+        }
+    }
+
+    private void checkGameCondition() {
+        if (isCollision(robotPosition, gameTargetPosition, 10)) {
+            gameState.put("win", true);
+        }
+        for (Point bullet : bullets) {
+            if (isCollision(robotPosition, bullet, 12)) {
+                gameState.put("lose", true);
+                break;
+            }
+        }
+    }
+
+    public Map<String, Boolean> getGameState() {
+        return gameState;
+    }
+
+    public void cleanGameState(){
+        gameState = new HashMap<>();
     }
 
     protected void setTargetPosition(Point point) {
@@ -67,7 +125,6 @@ public class GameVisualizer extends JPanel implements ActionListener {
     protected void onRedrawEvent() {
         repaint();
     }
-
 
     private static double angleBetweenPoints(Point p1, Point p2) {
         double angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
@@ -85,11 +142,8 @@ public class GameVisualizer extends JPanel implements ActionListener {
         } else {
             angularVelocity = -maxAngVelocity;
         }
-
-
         if (Math.abs(angle) >= 0.1)
             velocity = distance * Math.abs(angularVelocity) / 2;
-
 
         moveRobot(velocity, angularVelocity, 10);
     }
@@ -127,6 +181,7 @@ public class GameVisualizer extends JPanel implements ActionListener {
 
         robotPosition.setLocation(newX, newY);
         robotDirection = asNormalizedRadians(robotDirection + angularVelocity * duration);
+
     }
 
     private static double asNormalizedRadians(double angle) {
@@ -145,6 +200,20 @@ public class GameVisualizer extends JPanel implements ActionListener {
         Graphics2D g2d = (Graphics2D) g;
         drawRobot(g2d, (int) robotPosition.getX(), (int) robotPosition.getY(), robotDirection);
         drawTarget(g2d, (int) targetPosition.getX(), (int) targetPosition.getY());
+        drawGameTarget(g2d, gameTargetPosition.x, gameTargetPosition.y);
+        drawLets(g2d);
+
+        ArrayList<Point> bulletsCopy = new ArrayList<>(bullets);
+        g.setColor(Color.GRAY);
+        for (Point bullet : bulletsCopy) {
+            fillOval(g, bullet.x, bullet.y, 12, 12);
+        }
+        checkGameCondition();
+    }
+
+    private boolean isCollision(Point p1, Point p2, int diameter) {
+        double distance = p1.distance(p2);
+        return distance <= diameter;
     }
 
     private static void fillOval(Graphics g, int centerX, int centerY, int diam1, int diam2) {
@@ -180,5 +249,38 @@ public class GameVisualizer extends JPanel implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         onRedrawEvent();
+    }
+
+    private void shootBullets() {
+        ScheduledExecutorService bulletScheduler = Executors.newScheduledThreadPool(towers.size());
+
+        for (Point let : towers) {
+            bulletScheduler.scheduleAtFixedRate(() -> {
+                double bulletDirection = Math.random() * 2 * Math.PI;
+
+                Point bullet = new Point(let.x, let.y);
+                bullets.add(bullet);
+
+                ScheduledExecutorService bulletMoveScheduler = Executors.newScheduledThreadPool(1);
+                bulletMoveScheduler.scheduleAtFixedRate(() -> {
+
+                    int bulletSpeed = 7;
+
+                    int bulletX = bullet.x;
+                    int bulletY = bullet.y;
+                    bulletX += (int) (bulletSpeed * Math.cos(bulletDirection));
+                    bulletY += (int) (bulletSpeed * Math.sin(bulletDirection));
+
+                    bullet.setLocation(bulletX, bulletY);
+
+                    if (bulletX < 0 || bulletX > 1000 || bulletY < 0 || bulletY > 1000) {
+                        bullets.remove(bullet);
+                        bulletMoveScheduler.shutdown();
+                    }
+
+                    repaint();
+                }, 0, 20, TimeUnit.MILLISECONDS);
+            }, 0, 5, TimeUnit.SECONDS);
+        }
     }
 }
