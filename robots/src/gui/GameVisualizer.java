@@ -23,14 +23,12 @@ public class GameVisualizer extends JPanel implements ActionListener {
     private static final double maxAngVelocity = 0.01;
     private int screenHeight;
     private int screenWight;
-
     private double distance;
     private double angleTo;
     private ArrayList<Point> towers;
-
-    Map<String, Boolean> gameState = new HashMap<>();
     private volatile Point gameTargetPosition;
     private ArrayList<Point> bullets;
+    private EndGameHandling endGameHandling = new EndGameHandling();
 
     public GameVisualizer() {
         Timer timer = new Timer(3, this);
@@ -71,6 +69,10 @@ public class GameVisualizer extends JPanel implements ActionListener {
         shootBullets();
     }
 
+    public EndGameHandling getEndGame(){
+        return endGameHandling;
+    }
+
     private ArrayList<Point> generateRandomPositions(int count) {
         Random random = new Random();
         ArrayList<Point> points = new ArrayList<>();
@@ -96,26 +98,6 @@ public class GameVisualizer extends JPanel implements ActionListener {
             g.setColor(Color.BLACK);
             drawOval(g, point.x, point.y, 30, 30);
         }
-    }
-
-    private void checkGameCondition() {
-        if (isCollision(robotPosition, gameTargetPosition, 10)) {
-            gameState.put("win", true);
-        }
-        for (Point bullet : bullets) {
-            if (isCollision(robotPosition, bullet, 12)) {
-                gameState.put("lose", true);
-                break;
-            }
-        }
-    }
-
-    public Map<String, Boolean> getGameState() {
-        return gameState;
-    }
-
-    public void cleanGameState(){
-        gameState = new HashMap<>();
     }
 
     protected void setTargetPosition(Point point) {
@@ -153,7 +135,7 @@ public class GameVisualizer extends JPanel implements ActionListener {
     }
 
     private synchronized void moveRobot(double velocity, double angularVelocity, double duration) {
-        if (gameState.isEmpty()) {
+        if (endGameHandling.getGameState().isEmpty()) {
             velocity = applyLimits(velocity, 0, maxVelocity);
             angularVelocity = applyLimits(angularVelocity, -maxAngVelocity, maxAngVelocity);
             double newX = robotPosition.getX() + velocity / angularVelocity *
@@ -208,12 +190,7 @@ public class GameVisualizer extends JPanel implements ActionListener {
         for (Point bullet : bulletsCopy) {
             fillOval(g, bullet.x, bullet.y, 12, 12);
         }
-        checkGameCondition();
-    }
-
-    private boolean isCollision(Point p1, Point p2, int diameter) {
-        double distance = p1.distance(p2);
-        return distance <= diameter;
+        endGameHandling.checkGameState(robotPosition, gameTargetPosition, bullets);
     }
 
     private static void fillOval(Graphics g, int centerX, int centerY, int diam1, int diam2) {
@@ -252,37 +229,37 @@ public class GameVisualizer extends JPanel implements ActionListener {
     }
 
     private void shootBullets() {
-        if (gameState.isEmpty()){
-            ScheduledExecutorService bulletScheduler = Executors.newScheduledThreadPool(towers.size());
 
-            for (Point let : towers) {
-                bulletScheduler.scheduleAtFixedRate(() -> {
-                    double bulletDirection = Math.random() * 2 * Math.PI;
+        ScheduledExecutorService bulletScheduler = Executors.newScheduledThreadPool(towers.size());
 
-                    Point bullet = new Point(let.x, let.y);
-                    bullets.add(bullet);
+        for (Point let : towers) {
+            bulletScheduler.scheduleAtFixedRate(() -> {
+                double bulletDirection = Math.random() * 2 * Math.PI;
 
-                    ScheduledExecutorService bulletMoveScheduler = Executors.newScheduledThreadPool(1);
-                    bulletMoveScheduler.scheduleAtFixedRate(() -> {
+                Point bullet = new Point(let.x, let.y);
+                bullets.add(bullet);
 
-                        int bulletSpeed = 7;
+                ScheduledExecutorService bulletMoveScheduler = Executors.newScheduledThreadPool(1);
+                bulletMoveScheduler.scheduleAtFixedRate(() -> {
 
-                        int bulletX = bullet.x;
-                        int bulletY = bullet.y;
-                        bulletX += (int) (bulletSpeed * Math.cos(bulletDirection));
-                        bulletY += (int) (bulletSpeed * Math.sin(bulletDirection));
+                    int bulletSpeed = 7;
 
-                        bullet.setLocation(bulletX, bulletY);
+                    int bulletX = bullet.x;
+                    int bulletY = bullet.y;
+                    bulletX += (int) (bulletSpeed * Math.cos(bulletDirection));
+                    bulletY += (int) (bulletSpeed * Math.sin(bulletDirection));
 
-                        if (bulletX < 0 || bulletX > 1000 || bulletY < 0 || bulletY > 1000) {
-                            bullets.remove(bullet);
-                            bulletMoveScheduler.shutdown();
-                        }
+                    bullet.setLocation(bulletX, bulletY);
 
-                        repaint();
-                    }, 0, 20, TimeUnit.MILLISECONDS);
-                }, 0, 3, TimeUnit.SECONDS);
-            }
+                    if (bulletX < 0 || bulletX > 1000 || bulletY < 0 || bulletY > 1000) {
+                        bullets.remove(bullet);
+                        bulletMoveScheduler.shutdown();
+                    }
+
+                    repaint();
+                }, 0, 20, TimeUnit.MILLISECONDS);
+            }, 0, 3, TimeUnit.SECONDS);
         }
     }
+
 }

@@ -237,7 +237,7 @@ public class MainApplicationFrame extends JFrame {
                     if (frameState.returnFrameType().equals("LogWindow"))
                         frame = createLogWindow();
                     else {
-                         frame = new GameWindow();
+                        frame = new GameWindow();
                         checkState((GameWindow) frame);
                     }
 
