@@ -55,7 +55,7 @@ public class MainApplicationFrame extends JFrame {
     }
 
     public void checkState(GameWindow gameWindow) {
-        Map<String, Boolean> gameState = gameWindow.returnVisualizer().getGameState();
+        Map<String, Boolean> gameState = gameWindow.returnVisualizer().getEndGame().getGameState();
 
         boolean lose = gameState.getOrDefault("lose", false);
         boolean win = gameState.getOrDefault("win", false);
@@ -70,7 +70,7 @@ public class MainApplicationFrame extends JFrame {
             @Override
             public void run() {
                 checkState(gameWindow);
-                gameWindow.returnVisualizer().cleanGameState();
+                gameWindow.returnVisualizer().getEndGame().cleanGameState();
             }
         }, 100, TimeUnit.MILLISECONDS);
     }
@@ -81,7 +81,7 @@ public class MainApplicationFrame extends JFrame {
                 bundle.getString(title),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE);
-        gameWindow.returnVisualizer().cleanGameState();
+        gameWindow.returnVisualizer().getEndGame().cleanGameState();
         if (option == JOptionPane.YES_OPTION) {
             gameWindow.dispose();
             GameWindow newGameWindow = new GameWindow();
