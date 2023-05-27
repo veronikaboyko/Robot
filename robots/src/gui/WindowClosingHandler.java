@@ -18,13 +18,7 @@ public class WindowClosingHandler extends InternalFrameAdapter {
     }
 
     public static boolean shouldCloseWindow(Component window) {
-        String prop;
-        if (MainApplicationFrame.flagLanguage)
-            prop = "locale_en_US";
-        else {
-            prop = "locale_ru_RU";
-        }
-        ResourceBundle bundle = ResourceBundle.getBundle(prop);
+        ResourceBundle bundle = MainApplicationFrame.localeChange();
         UIManager.put("OptionPane.yesButtonText", bundle.getString("yes"));
         UIManager.put("OptionPane.noButtonText", bundle.getString("no"));
         int option = JOptionPane.showConfirmDialog(

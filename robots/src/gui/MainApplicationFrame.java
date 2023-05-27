@@ -28,7 +28,6 @@ public class MainApplicationFrame extends JFrame {
     private final JDesktopPane desktopPane = new JDesktopPane();
     JMenuBar menuBar;
     LogWindow logWindow;
-    GameWindow gameWindow;
     ResourceBundle bundle;
     String locale = "locale_en_US";
     static Boolean flagLanguage = true;
@@ -43,7 +42,7 @@ public class MainApplicationFrame extends JFrame {
         logWindow = createLogWindow();
         addWindow(logWindow);
 
-        gameWindow = new GameWindow();
+        GameWindow gameWindow = new GameWindow();
         addWindow(gameWindow);
 
         bundle = ResourceBundle.getBundle(locale);
@@ -51,27 +50,47 @@ public class MainApplicationFrame extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         restoreDesktopState();
         pack();
-        checkState();
+        checkState(gameWindow);
 
     }
 
-    public void checkState(){
+    public void checkState(GameWindow gameWindow) {
         Map<String, Boolean> gameState = gameWindow.returnVisualizer().getGameState();
 
         boolean lose = gameState.getOrDefault("lose", false);
         boolean win = gameState.getOrDefault("win", false);
-        if (lose) {
-            JOptionPane.showMessageDialog(null, "Game Over!");
-            gameWindow.returnVisualizer().cleanGameState();
-
-        } else if (win) {
-            JOptionPane.showMessageDialog(null, "You Win!");
-            gameWindow.returnVisualizer().cleanGameState();
-        }
+        UIManager.put("OptionPane.yesButtonText", bundle.getString("restart"));
+        UIManager.put("OptionPane.noButtonText", bundle.getString("no"));
+        if (lose)
+            windowEndGame("sorry", "gameOver", gameWindow);
+        else if (win)
+            windowEndGame("congrat", "youWin", gameWindow);
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        scheduler.schedule(this::checkState, 100, TimeUnit.MILLISECONDS);
+        scheduler.schedule(new Runnable() {
+            @Override
+            public void run() {
+                checkState(gameWindow);
+                gameWindow.returnVisualizer().cleanGameState();
+            }
+        }, 100, TimeUnit.MILLISECONDS);
     }
 
+    public void windowEndGame(String title, String message, GameWindow gameWindow){
+        int option = JOptionPane.showConfirmDialog(null,
+                bundle.getString(message),
+                bundle.getString(title),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+        gameWindow.returnVisualizer().cleanGameState();
+        if (option == JOptionPane.YES_OPTION) {
+            gameWindow.dispose();
+            GameWindow newGameWindow = new GameWindow();
+            addWindow(newGameWindow);
+            checkState(newGameWindow);
+        }
+        else
+            gameWindow.dispose();
+    }
 
 
     protected LogWindow createLogWindow() {
@@ -217,8 +236,11 @@ public class MainApplicationFrame extends JFrame {
                     JInternalFrame frame;
                     if (frameState.returnFrameType().equals("LogWindow"))
                         frame = createLogWindow();
-                    else
-                        frame = new GameWindow();
+                    else {
+                         frame = new GameWindow();
+                        checkState((GameWindow) frame);
+                    }
+
                     frameState.restore(frame);
                     newPane.add(frame);
                     frame.setVisible(true);
@@ -271,5 +293,14 @@ public class MainApplicationFrame extends JFrame {
                  UnsupportedLookAndFeelException e) {
             // just ignore
         }
+    }
+
+    static public ResourceBundle localeChange() {
+        String prop;
+        if (MainApplicationFrame.flagLanguage)
+            prop = "locale_en_US";
+        else
+            prop = "locale_ru_RU";
+        return ResourceBundle.getBundle(prop);
     }
 }
