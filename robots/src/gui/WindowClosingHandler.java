@@ -18,7 +18,7 @@ public class WindowClosingHandler extends InternalFrameAdapter {
     }
 
     public static boolean shouldCloseWindow(Component window) {
-        ResourceBundle bundle = ResourceBundle.getBundle(MainApplicationFrame.locale);
+        ResourceBundle bundle = MainApplicationFrame.localeChange();
         UIManager.put("OptionPane.yesButtonText", bundle.getString("yes"));
         UIManager.put("OptionPane.noButtonText", bundle.getString("no"));
         int option = JOptionPane.showConfirmDialog(

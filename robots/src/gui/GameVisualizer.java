@@ -21,8 +21,8 @@ public class GameVisualizer extends JPanel implements ActionListener {
     private volatile Point targetPosition = new Point(150, 100);
     private static final double maxVelocity = 0.1;
     private static final double maxAngVelocity = 0.01;
-    private int screenWight;
     private int screenHeight;
+    private int screenWight;
 
     private double distance;
     private double angleTo;
@@ -153,7 +153,7 @@ public class GameVisualizer extends JPanel implements ActionListener {
     }
 
     private synchronized void moveRobot(double velocity, double angularVelocity, double duration) {
-        if (gameState.isEmpty()){
+        if (gameState.isEmpty()) {
             velocity = applyLimits(velocity, 0, maxVelocity);
             angularVelocity = applyLimits(angularVelocity, -maxAngVelocity, maxAngVelocity);
             double newX = robotPosition.getX() + velocity / angularVelocity *
@@ -169,16 +169,14 @@ public class GameVisualizer extends JPanel implements ActionListener {
                 newY = robotPosition.getY() + velocity * duration * Math.sin(robotDirection);
             }
 
-            if (newX < 2) {
+            if (newX < 2)
                 newX = 2;
-            } else if (newX > screenWight - 2) {
+            else if (newX > screenWight - 2)
                 newX = screenWight - 2;
-            }
-            if (newY < 20) {
-                newY = 20;
-            } else if (newY > screenHeight - 2) {
+            if (newY < 2)
+                newY = 2;
+            else if (newY > screenHeight - 2)
                 newY = screenHeight - 2;
-            }
 
             robotPosition.setLocation(newX, newY);
             robotDirection = asNormalizedRadians(robotDirection + angularVelocity * duration);
@@ -197,8 +195,8 @@ public class GameVisualizer extends JPanel implements ActionListener {
     @Override
     public void paint(Graphics g) {
         super.paint(g);
-        screenWight = getWidth() * 2;
         screenHeight = getHeight() * 2;
+        screenWight = getWidth() * 2;
         Graphics2D g2d = (Graphics2D) g;
         drawRobot(g2d, (int) robotPosition.getX(), (int) robotPosition.getY(), robotDirection);
         drawTarget(g2d, (int) targetPosition.getX(), (int) targetPosition.getY());
@@ -254,35 +252,37 @@ public class GameVisualizer extends JPanel implements ActionListener {
     }
 
     private void shootBullets() {
-        ScheduledExecutorService bulletScheduler = Executors.newScheduledThreadPool(towers.size());
+        if (gameState.isEmpty()){
+            ScheduledExecutorService bulletScheduler = Executors.newScheduledThreadPool(towers.size());
 
-        for (Point let : towers) {
-            bulletScheduler.scheduleAtFixedRate(() -> {
-                double bulletDirection = Math.random() * 2 * Math.PI;
+            for (Point let : towers) {
+                bulletScheduler.scheduleAtFixedRate(() -> {
+                    double bulletDirection = Math.random() * 2 * Math.PI;
 
-                Point bullet = new Point(let.x, let.y);
-                bullets.add(bullet);
+                    Point bullet = new Point(let.x, let.y);
+                    bullets.add(bullet);
 
-                ScheduledExecutorService bulletMoveScheduler = Executors.newScheduledThreadPool(1);
-                bulletMoveScheduler.scheduleAtFixedRate(() -> {
+                    ScheduledExecutorService bulletMoveScheduler = Executors.newScheduledThreadPool(1);
+                    bulletMoveScheduler.scheduleAtFixedRate(() -> {
 
-                    int bulletSpeed = 7;
+                        int bulletSpeed = 7;
 
-                    int bulletX = bullet.x;
-                    int bulletY = bullet.y;
-                    bulletX += (int) (bulletSpeed * Math.cos(bulletDirection));
-                    bulletY += (int) (bulletSpeed * Math.sin(bulletDirection));
+                        int bulletX = bullet.x;
+                        int bulletY = bullet.y;
+                        bulletX += (int) (bulletSpeed * Math.cos(bulletDirection));
+                        bulletY += (int) (bulletSpeed * Math.sin(bulletDirection));
 
-                    bullet.setLocation(bulletX, bulletY);
+                        bullet.setLocation(bulletX, bulletY);
 
-                    if (bulletX < 0 || bulletX > 1000 || bulletY < 0 || bulletY > 1000) {
-                        bullets.remove(bullet);
-                        bulletMoveScheduler.shutdown();
-                    }
+                        if (bulletX < 0 || bulletX > 1000 || bulletY < 0 || bulletY > 1000) {
+                            bullets.remove(bullet);
+                            bulletMoveScheduler.shutdown();
+                        }
 
-                    repaint();
-                }, 0, 20, TimeUnit.MILLISECONDS);
-            }, 0, 3, TimeUnit.SECONDS);
+                        repaint();
+                    }, 0, 20, TimeUnit.MILLISECONDS);
+                }, 0, 3, TimeUnit.SECONDS);
+            }
         }
     }
 }

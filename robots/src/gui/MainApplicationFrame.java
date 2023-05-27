@@ -29,22 +29,23 @@ public class MainApplicationFrame extends JFrame {
     JMenuBar menuBar;
     LogWindow logWindow;
     ResourceBundle bundle;
-    static String locale = "locale_en_US";
+    String locale = "locale_en_US";
+    static Boolean flagLanguage = true;
 
     public MainApplicationFrame() {
         int inset = 50;
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         setBounds(inset, inset, screenSize.width - inset * 2, screenSize.height - inset * 2);
-        bundle = ResourceBundle.getBundle(locale);
 
         setContentPane(desktopPane);
 
         logWindow = createLogWindow();
         addWindow(logWindow);
 
-        GameWindow gameWindow = new GameWindow(bundle);
+        GameWindow gameWindow = new GameWindow();
         addWindow(gameWindow);
 
+        bundle = ResourceBundle.getBundle(locale);
         setJMenuBar(generateMenuBar());
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         restoreDesktopState();
@@ -83,7 +84,7 @@ public class MainApplicationFrame extends JFrame {
         gameWindow.returnVisualizer().getEndGame().cleanGameState();
         if (option == JOptionPane.YES_OPTION) {
             gameWindow.dispose();
-            GameWindow newGameWindow = new GameWindow(bundle);
+            GameWindow newGameWindow = new GameWindow();
             addWindow(newGameWindow);
             checkState(newGameWindow);
         }
@@ -93,7 +94,7 @@ public class MainApplicationFrame extends JFrame {
 
 
     protected LogWindow createLogWindow() {
-        LogWindow logWindow = new LogWindow(Logger.getDefaultLogSource(), bundle);
+        LogWindow logWindow = new LogWindow(Logger.getDefaultLogSource());
         logWindow.setLocation(10, 10);
         logWindow.setSize(300, 800);
         setMinimumSize(logWindow.getSize());
@@ -152,6 +153,7 @@ public class MainApplicationFrame extends JFrame {
 
     private void updateLocale(String loc, Locale newLocale) {
         locale = loc;
+        flagLanguage = locale.equals("locale_en_US");
         bundle = ResourceBundle.getBundle(locale);
         Locale.setDefault(newLocale);
         menuBar.removeAll();
@@ -230,13 +232,12 @@ public class MainApplicationFrame extends JFrame {
             try (ObjectInputStream in = new ObjectInputStream(Files.newInputStream(file.toPath()))) {
                 DesktopState state = (DesktopState) in.readObject();
                 locale = in.readUTF();
-                ResourceBundle bundle = ResourceBundle.getBundle(locale);
                 for (DesktopState.FrameState frameState : state.getFrames()) {
                     JInternalFrame frame;
                     if (frameState.returnFrameType().equals("LogWindow"))
                         frame = createLogWindow();
                     else {
-                         frame = new GameWindow(bundle);
+                         frame = new GameWindow();
                         checkState((GameWindow) frame);
                     }
 
@@ -244,6 +245,7 @@ public class MainApplicationFrame extends JFrame {
                     newPane.add(frame);
                     frame.setVisible(true);
                 }
+                bundle = ResourceBundle.getBundle(locale);
                 UIManager.put("OptionPane.yesButtonText", bundle.getString("yes"));
                 UIManager.put("OptionPane.noButtonText", bundle.getString("no"));
                 int option = JOptionPane.showConfirmDialog(
@@ -291,5 +293,14 @@ public class MainApplicationFrame extends JFrame {
                  UnsupportedLookAndFeelException e) {
             // just ignore
         }
+    }
+
+    static public ResourceBundle localeChange() {
+        String prop;
+        if (MainApplicationFrame.flagLanguage)
+            prop = "locale_en_US";
+        else
+            prop = "locale_ru_RU";
+        return ResourceBundle.getBundle(prop);
     }
 }
