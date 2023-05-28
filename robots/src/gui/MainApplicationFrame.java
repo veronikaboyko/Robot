@@ -20,6 +20,10 @@ import java.util.concurrent.TimeUnit;
 import javax.swing.*;
 
 
+import gui.Window.GameWindow;
+import gui.Window.LogWindow;
+import gui.Window.RobotPositionWindow;
+import gui.Window.WindowClosingHandler;
 import log.Logger;
 
 import static java.util.Locale.ENGLISH;
@@ -29,7 +33,7 @@ public class MainApplicationFrame extends JFrame {
     JMenuBar menuBar;
     LogWindow logWindow;
     ResourceBundle bundle;
-    static String locale = "locale_en_US";
+    public static String locale = "locale_en_US";
     public MainApplicationFrame() {
         int inset = 50;
         bundle = ResourceBundle.getBundle(locale);
@@ -57,7 +61,7 @@ public class MainApplicationFrame extends JFrame {
 
         boolean lose = gameState.getOrDefault("lose", false);
         boolean win = gameState.getOrDefault("win", false);
-        UIManager.put("OptionPane.yesButtonText", bundle.getString("restart"));
+        UIManager.put("OptionPane.yesButtonText", bundle.getString("yes"));
         UIManager.put("OptionPane.noButtonText", bundle.getString("no"));
         if (lose)
             windowEndGame("sorry", "gameOver", gameWindow);

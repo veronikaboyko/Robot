@@ -1,11 +1,11 @@
 package gui;
 
-import java.awt.*;
+import gui.Window.GameWindow;
+import gui.Window.LogWindow;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.ResourceBundle;
 
 import javax.swing.*;
 

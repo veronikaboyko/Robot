@@ -1,8 +1,9 @@
-package gui;
+package gui.Window;
 
 import java.awt.*;
 import java.util.ResourceBundle;
 
+import gui.Window.WindowClosingHandler;
 import log.LogChangeListener;
 import log.LogEntry;
 import log.LogWindowSource;

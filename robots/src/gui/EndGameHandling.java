@@ -6,6 +6,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class EndGameHandling {
+
+    private int drawBullet = 12;
+
+    private int diamGameTarget = 10;
+
     private Map<String, Boolean> gameState = new HashMap<>();
 
     public void checkGameState(Point robotPosition, Point gameTargetPosition, ArrayList<Point> bullets){
@@ -15,14 +20,14 @@ public class EndGameHandling {
 
     private void checkLose(Point robotPosition, ArrayList<Point> bullets) {
         for (Point bullet : bullets) {
-            if (isCollision(robotPosition, bullet, 12)) {
+            if (isCollision(robotPosition, bullet, drawBullet)) {
                 gameState.put("lose", true);
                 break;
             }
         }
     }
     private void checkWin(Point robotPosition, Point gameTargetPosition) {
-        if (isCollision(robotPosition, gameTargetPosition, 10)) {
+        if (isCollision(robotPosition, gameTargetPosition, diamGameTarget)) {
             gameState.put("win", true);
         }
     }

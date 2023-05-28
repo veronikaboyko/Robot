@@ -6,6 +6,12 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
+import java.io.File;
+import java.io.IOException;
+
+import org.ini4j.Ini;
+import org.ini4j.Profile;
+
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -23,6 +29,22 @@ public class GameVisualizer extends JPanel implements ActionListener {
     private static final double maxAngVelocity = 0.01;
     private int screenHeight;
     private int screenWight;
+    private int timeOutAttack;
+    private int timeOutBullet;
+    private int bulletSpeed;
+    private int startTimeBullet;
+    private int startTimeAttack;
+    private int threadPoolBullet;
+    private int threadPoolGame;
+    private int starTimeGame;
+    private int timeOutResetGame;
+    private int diamBullet;
+    private int minCordBullet;
+    private int maxCordBullet;
+    private int diamDrawTarget;
+    private int diamTarget;
+    private int diamWhiteConst;
+    private int diamBlackConst;
     private double distance;
     private double angleTo;
     private ArrayList<Point> towers;
@@ -31,10 +53,32 @@ public class GameVisualizer extends JPanel implements ActionListener {
     private EndGameHandling endGameHandling = new EndGameHandling();
 
     public GameVisualizer() {
+        try {
+            Profile.Section modelSection = new Ini(new File("config.ini")).get("model");
+            timeOutBullet = modelSection.get("timeOutBullet", Integer.class);
+            timeOutAttack = modelSection.get("timeOutAttack", Integer.class);
+            bulletSpeed = modelSection.get("bulletSpeed", Integer.class);
+            startTimeBullet = modelSection.get("startTimeBullet", Integer.class);
+            startTimeAttack = modelSection.get("startTimeAttack", Integer.class);
+            threadPoolBullet = modelSection.get("threadPoolBullet", Integer.class);
+            threadPoolGame = modelSection.get("threadPoolGame", Integer.class);
+            starTimeGame = modelSection.get("starTimeGame", Integer.class);
+            timeOutResetGame = modelSection.get("timeOutResetGame", Integer.class);
+            diamBullet = modelSection.get("diamBullet", Integer.class);
+            minCordBullet = modelSection.get("minCordBullet", Integer.class);
+            maxCordBullet = modelSection.get("maxCordBullet", Integer.class);
+            diamDrawTarget = modelSection.get("diamDrawTarget", Integer.class);
+            diamTarget = modelSection.get("diamTarget", Integer.class);
+            diamWhiteConst = modelSection.get("diamWhiteConst", Integer.class);
+            diamBlackConst = modelSection.get("diamBlackConst", Integer.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         Timer timer = new Timer(3, this);
         timer.start();
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
-        scheduler.scheduleAtFixedRate(this::onModelUpdateEvent, 0, 10, TimeUnit.MILLISECONDS);
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(threadPoolGame);
+        scheduler.scheduleAtFixedRate(this::onModelUpdateEvent, starTimeGame, timeOutResetGame, TimeUnit.MILLISECONDS);
 
         MouseAdapter mouseAdapter = new MouseAdapter() {
             @Override
@@ -43,6 +87,8 @@ public class GameVisualizer extends JPanel implements ActionListener {
                 repaint();
             }
         };
+
+
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -69,7 +115,8 @@ public class GameVisualizer extends JPanel implements ActionListener {
         shootBullets();
     }
 
-    public EndGameHandling getEndGame(){
+
+    public EndGameHandling getEndGame() {
         return endGameHandling;
     }
 
@@ -77,8 +124,8 @@ public class GameVisualizer extends JPanel implements ActionListener {
         Random random = new Random();
         ArrayList<Point> points = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            int x = random.nextInt(700 - 40) + 20;
-            int y = random.nextInt(700 - 40) + 20;
+            int x = random.nextInt(660) + 20;
+            int y = random.nextInt(660) + 20;
             points.add(new Point(x, y));
         }
         return points;
@@ -86,17 +133,17 @@ public class GameVisualizer extends JPanel implements ActionListener {
 
     private void drawGameTarget(Graphics2D g, int x, int y) {
         g.setColor(Color.MAGENTA);
-        fillOval(g, x, y, 30, 30);
+        fillOval(g, x, y, diamDrawTarget, diamDrawTarget);
         g.setColor(Color.BLACK);
-        drawOval(g, x, y, 30, 30);
+        drawOval(g, x, y, diamDrawTarget, diamDrawTarget);
     }
 
     private void drawLets(Graphics2D g) {
         for (Point point : towers) {
             g.setColor(Color.GRAY);
-            fillOval(g, point.x, point.y, 30, 30);
+            fillOval(g, point.x, point.y, diamDrawTarget, diamDrawTarget);
             g.setColor(Color.BLACK);
-            drawOval(g, point.x, point.y, 30, 30);
+            drawOval(g, point.x, point.y, diamDrawTarget, diamDrawTarget);
         }
     }
 
@@ -188,7 +235,7 @@ public class GameVisualizer extends JPanel implements ActionListener {
         ArrayList<Point> bulletsCopy = new ArrayList<>(bullets);
         g.setColor(Color.GRAY);
         for (Point bullet : bulletsCopy) {
-            fillOval(g, bullet.x, bullet.y, 12, 12);
+            fillOval(g, bullet.x, bullet.y, diamBullet, diamBullet);
         }
         endGameHandling.checkGameState(robotPosition, gameTargetPosition, bullets);
     }
@@ -205,22 +252,22 @@ public class GameVisualizer extends JPanel implements ActionListener {
         AffineTransform t = AffineTransform.getRotateInstance(direction, x, y);
         g.setTransform(t);
         g.setColor(Color.MAGENTA);
-        fillOval(g, x, y, 30, 10);
+        fillOval(g, x, y, diamDrawTarget, diamBlackConst);
         g.setColor(Color.BLACK);
-        drawOval(g, x, y, 30, 10);
+        drawOval(g, x, y, diamDrawTarget, diamWhiteConst);
         g.setColor(Color.WHITE);
-        fillOval(g, x + 10, y, 5, 5);
+        fillOval(g, x + diamWhiteConst, y, diamTarget, diamTarget);
         g.setColor(Color.BLACK);
-        drawOval(g, x + 10, y, 5, 5);
+        drawOval(g, x + diamBlackConst, y, diamTarget, diamTarget);
     }
 
     private void drawTarget(Graphics2D g, int x, int y) {
         AffineTransform t = AffineTransform.getRotateInstance(0, 0, 0);
         g.setTransform(t);
         g.setColor(Color.GREEN);
-        fillOval(g, x, y, 5, 5);
+        fillOval(g, x, y, diamTarget, diamTarget);
         g.setColor(Color.BLACK);
-        drawOval(g, x, y, 5, 5);
+        drawOval(g, x, y, diamTarget, diamTarget);
     }
 
     @Override
@@ -239,26 +286,26 @@ public class GameVisualizer extends JPanel implements ActionListener {
                 Point bullet = new Point(let.x, let.y);
                 bullets.add(bullet);
 
-                ScheduledExecutorService bulletMoveScheduler = Executors.newScheduledThreadPool(1);
+                ScheduledExecutorService bulletMoveScheduler = Executors.newScheduledThreadPool(threadPoolBullet);
                 bulletMoveScheduler.scheduleAtFixedRate(() -> {
-
-                    int bulletSpeed = 7;
 
                     int bulletX = bullet.x;
                     int bulletY = bullet.y;
+
                     bulletX += (int) (bulletSpeed * Math.cos(bulletDirection));
                     bulletY += (int) (bulletSpeed * Math.sin(bulletDirection));
 
                     bullet.setLocation(bulletX, bulletY);
 
-                    if (bulletX < 0 || bulletX > 1000 || bulletY < 0 || bulletY > 1000) {
+                    if (bulletX < minCordBullet || bulletX > maxCordBullet ||
+                            bulletY < minCordBullet || bulletY > maxCordBullet) {
                         bullets.remove(bullet);
                         bulletMoveScheduler.shutdown();
                     }
 
                     repaint();
-                }, 0, 20, TimeUnit.MILLISECONDS);
-            }, 0, 3, TimeUnit.SECONDS);
+                }, startTimeBullet, timeOutBullet, TimeUnit.MILLISECONDS);
+            }, startTimeAttack, timeOutAttack, TimeUnit.SECONDS);
         }
     }
 

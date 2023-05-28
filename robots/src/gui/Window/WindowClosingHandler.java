@@ -1,5 +1,6 @@
-package gui;
+package gui.Window;
 
+import gui.MainApplicationFrame;
 import javax.swing.*;
 import javax.swing.event.InternalFrameAdapter;
 import javax.swing.event.InternalFrameEvent;
