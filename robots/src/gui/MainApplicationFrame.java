@@ -20,10 +20,7 @@ import java.util.concurrent.TimeUnit;
 import javax.swing.*;
 
 
-import gui.Window.GameWindow;
-import gui.Window.LogWindow;
-import gui.Window.RobotPositionWindow;
-import gui.Window.WindowClosingHandler;
+import gui.Window.*;
 import log.Logger;
 
 import static java.util.Locale.ENGLISH;
@@ -32,6 +29,8 @@ public class MainApplicationFrame extends JFrame {
     private final JDesktopPane desktopPane = new JDesktopPane();
     JMenuBar menuBar;
     LogWindow logWindow;
+    RobotPositionWindow robotPositionWindow;
+    DistanceToTarget distanceToTarget;
     ResourceBundle bundle;
     public static String locale = "locale_en_US";
     public MainApplicationFrame() {
@@ -47,6 +46,12 @@ public class MainApplicationFrame extends JFrame {
 
         GameWindow gameWindow = new GameWindow(bundle);
         addWindow(gameWindow);
+
+        robotPositionWindow = new RobotPositionWindow(bundle);
+        addWindow(robotPositionWindow);
+
+        distanceToTarget = new DistanceToTarget(bundle);
+        addWindow(distanceToTarget);
 
         setJMenuBar(generateMenuBar());
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -160,7 +165,7 @@ public class MainApplicationFrame extends JFrame {
         menuBar.removeAll();
         generateMenuBar();
         setJMenuBar(menuBar);
-        for (JInternalFrame frame : desktopPane.getAllFrames())
+        for (JInternalFrame frame: desktopPane.getAllFrames())
             frame.setTitle(bundle.getString(frame.getClass().getSimpleName()));
         revalidate();
         repaint();
@@ -238,11 +243,14 @@ public class MainApplicationFrame extends JFrame {
                     JInternalFrame frame;
                     if (frameState.returnFrameType().equals("LogWindow"))
                         frame = createLogWindow();
-                    else {
+                    else if (frameState.returnFrameType().equals("GameWindow")){
                         frame = new GameWindow(bundle);
                         checkState((GameWindow) frame);
                     }
-
+                    else if (frameState.returnFrameType().equals("RobotPositionWindow"))
+                        frame = new RobotPositionWindow(bundle);
+                    else
+                        frame = new DistanceToTarget(bundle);
                     frameState.restore(frame);
                     newPane.add(frame);
                     frame.setVisible(true);
@@ -255,7 +263,7 @@ public class MainApplicationFrame extends JFrame {
                         bundle.getString("confirm"),
                         JOptionPane.YES_NO_OPTION);
                 if (option == JOptionPane.YES_OPTION) {
-                    for (JInternalFrame frame : desktopPane.getAllFrames())
+                    for (JInternalFrame frame :  desktopPane.getAllFrames())
                         frame.dispose();
                     for (JInternalFrame frame : newPane.getAllFrames())
                         addWindow(frame);

@@ -22,6 +22,8 @@ import javax.swing.*;
 import javax.swing.Timer;
 
 public class GameVisualizer extends JPanel implements ActionListener {
+    private static Point positionRobotNow = new Point(0, 0);
+    private static Point positionTargetNow = new Point(0,0);
     private volatile Point robotPosition = new Point(300, 300);
     private volatile double robotDirection = 0;
     private volatile Point targetPosition = new Point(150, 100);
@@ -198,6 +200,7 @@ public class GameVisualizer extends JPanel implements ActionListener {
                 newY = robotPosition.getY() + velocity * duration * Math.sin(robotDirection);
             }
 
+
             if (newX < 2)
                 newX = 2;
             else if (newX > screenWight - 2)
@@ -206,6 +209,7 @@ public class GameVisualizer extends JPanel implements ActionListener {
                 newY = 2;
             else if (newY > screenHeight - 2)
                 newY = screenHeight - 2;
+
 
             robotPosition.setLocation(newX, newY);
             robotDirection = asNormalizedRadians(robotDirection + angularVelocity * duration);
@@ -237,6 +241,8 @@ public class GameVisualizer extends JPanel implements ActionListener {
         for (Point bullet : bulletsCopy) {
             fillOval(g, bullet.x, bullet.y, diamBullet, diamBullet);
         }
+        positionTargetNow.setLocation(gameTargetPosition.getLocation());
+        positionRobotNow.setLocation(robotPosition.getLocation());
         endGameHandling.checkGameState(robotPosition, gameTargetPosition, bullets);
     }
 
@@ -273,6 +279,14 @@ public class GameVisualizer extends JPanel implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         onRedrawEvent();
+    }
+
+    public static Point getPositionRobot(){
+        return positionRobotNow;
+    }
+
+    public static Point getPositionTarget(){
+        return positionTargetNow;
     }
 
     private void shootBullets() {

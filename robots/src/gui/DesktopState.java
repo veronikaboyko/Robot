@@ -1,7 +1,9 @@
 package gui;
 
+import gui.Window.DistanceToTarget;
 import gui.Window.GameWindow;
 import gui.Window.LogWindow;
+import gui.Window.RobotPositionWindow;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -25,6 +27,10 @@ public class DesktopState implements Serializable {
             return "LogWindow";
         } else if (frame instanceof GameWindow) {
             return "GameWindow";
+        } else if (frame instanceof DistanceToTarget) {
+            return "DistanceToTarget";
+        } else if (frame instanceof RobotPositionWindow) {
+            return "RobotPositionWindow";
         } else {
             return null;
         }

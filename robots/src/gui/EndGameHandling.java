@@ -9,7 +9,7 @@ public class EndGameHandling {
 
     private int drawBullet = 12;
 
-    private int diamGameTarget = 10;
+    public static int diamGameTarget = 10;
 
     private Map<String, Boolean> gameState = new HashMap<>();
 
