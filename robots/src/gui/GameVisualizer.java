@@ -31,18 +31,10 @@ public class GameVisualizer extends JPanel implements ActionListener {
     private static final double maxAngVelocity = 0.01;
     private int screenHeight;
     private int screenWight;
-    private int timeOutAttack;
-    private int timeOutBullet;
-    private int bulletSpeed;
-    private int startTimeBullet;
-    private int startTimeAttack;
-    private int threadPoolBullet;
     private int threadPoolGame;
     private int starTimeGame;
     private int timeOutResetGame;
     private int diamBullet;
-    private int minCordBullet;
-    private int maxCordBullet;
     private int diamDrawTarget;
     private int diamTarget;
     private int diamWhiteConst;
@@ -57,18 +49,10 @@ public class GameVisualizer extends JPanel implements ActionListener {
     public GameVisualizer() {
         try {
             Profile.Section modelSection = new Ini(new File("config.ini")).get("model");
-            timeOutBullet = modelSection.get("timeOutBullet", Integer.class);
-            timeOutAttack = modelSection.get("timeOutAttack", Integer.class);
-            bulletSpeed = modelSection.get("bulletSpeed", Integer.class);
-            startTimeBullet = modelSection.get("startTimeBullet", Integer.class);
-            startTimeAttack = modelSection.get("startTimeAttack", Integer.class);
-            threadPoolBullet = modelSection.get("threadPoolBullet", Integer.class);
             threadPoolGame = modelSection.get("threadPoolGame", Integer.class);
             starTimeGame = modelSection.get("starTimeGame", Integer.class);
             timeOutResetGame = modelSection.get("timeOutResetGame", Integer.class);
             diamBullet = modelSection.get("diamBullet", Integer.class);
-            minCordBullet = modelSection.get("minCordBullet", Integer.class);
-            maxCordBullet = modelSection.get("maxCordBullet", Integer.class);
             diamDrawTarget = modelSection.get("diamDrawTarget", Integer.class);
             diamTarget = modelSection.get("diamTarget", Integer.class);
             diamWhiteConst = modelSection.get("diamWhiteConst", Integer.class);
@@ -114,7 +98,8 @@ public class GameVisualizer extends JPanel implements ActionListener {
         gameTargetPosition = generateRandomPositions(1).get(0);
         towers = generateRandomPositions(10);
 
-        shootBullets();
+        EndGameHandling.shootBullets(towers, bullets);
+        repaint();
     }
 
 
@@ -289,38 +274,5 @@ public class GameVisualizer extends JPanel implements ActionListener {
         return positionTargetNow;
     }
 
-    private void shootBullets() {
-
-        ScheduledExecutorService bulletScheduler = Executors.newScheduledThreadPool(towers.size());
-
-        for (Point let : towers) {
-            bulletScheduler.scheduleAtFixedRate(() -> {
-                double bulletDirection = Math.random() * 2 * Math.PI;
-
-                Point bullet = new Point(let.x, let.y);
-                bullets.add(bullet);
-
-                ScheduledExecutorService bulletMoveScheduler = Executors.newScheduledThreadPool(threadPoolBullet);
-                bulletMoveScheduler.scheduleAtFixedRate(() -> {
-
-                    int bulletX = bullet.x;
-                    int bulletY = bullet.y;
-
-                    bulletX += (int) (bulletSpeed * Math.cos(bulletDirection));
-                    bulletY += (int) (bulletSpeed * Math.sin(bulletDirection));
-
-                    bullet.setLocation(bulletX, bulletY);
-
-                    if (bulletX < minCordBullet || bulletX > maxCordBullet ||
-                            bulletY < minCordBullet || bulletY > maxCordBullet) {
-                        bullets.remove(bullet);
-                        bulletMoveScheduler.shutdown();
-                    }
-
-                    repaint();
-                }, startTimeBullet, timeOutBullet, TimeUnit.MILLISECONDS);
-            }, startTimeAttack, timeOutAttack, TimeUnit.SECONDS);
-        }
-    }
 
 }
