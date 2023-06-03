@@ -23,7 +23,7 @@ import javax.swing.Timer;
 
 public class GameVisualizer extends JPanel implements ActionListener {
     private static Point positionRobotNow = new Point(0, 0);
-    private static Point positionTargetNow = new Point(0,0);
+    private static Point positionTargetNow = new Point(0, 0);
     private volatile Point robotPosition = new Point(300, 300);
     private volatile double robotDirection = 0;
     private volatile Point targetPosition = new Point(150, 100);
@@ -45,6 +45,7 @@ public class GameVisualizer extends JPanel implements ActionListener {
     private volatile Point gameTargetPosition;
     private ArrayList<Point> bullets;
     private EndGameHandling endGameHandling = new EndGameHandling();
+    public ZoomSlider zoomSlider;
 
     public GameVisualizer() {
         try {
@@ -64,7 +65,8 @@ public class GameVisualizer extends JPanel implements ActionListener {
         Timer timer = new Timer(3, this);
         timer.start();
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(threadPoolGame);
-        scheduler.scheduleAtFixedRate(this::onModelUpdateEvent, starTimeGame, timeOutResetGame, TimeUnit.MILLISECONDS);
+        scheduler.scheduleAtFixedRate(this::onModelUpdateEvent, starTimeGame, timeOutResetGame,
+                TimeUnit.MILLISECONDS);
 
         MouseAdapter mouseAdapter = new MouseAdapter() {
             @Override
@@ -98,8 +100,17 @@ public class GameVisualizer extends JPanel implements ActionListener {
         gameTargetPosition = generateRandomPositions(1).get(0);
         towers = generateRandomPositions(10);
 
-        EndGameHandling.shootBullets(towers, bullets);
-        repaint();
+        zoomSlider = new ZoomSlider(this);
+        setLayout(new BorderLayout());
+        add(zoomSlider, BorderLayout.SOUTH);
+
+
+        ScheduledExecutorService scaleUpdateExecutor = Executors.newScheduledThreadPool(towers.size());
+        scaleUpdateExecutor.scheduleAtFixedRate(() -> {
+            double scale = zoomSlider.getScale();
+            EndGameHandling.shootBullets(towers, bullets, scale);
+        }, 0, 5, TimeUnit.SECONDS);
+
     }
 
 
@@ -120,17 +131,27 @@ public class GameVisualizer extends JPanel implements ActionListener {
 
     private void drawGameTarget(Graphics2D g, int x, int y) {
         g.setColor(Color.MAGENTA);
-        fillOval(g, x, y, diamDrawTarget, diamDrawTarget);
+        fillOval((Graphics) g, (int) (x * zoomSlider.getScale()), (int) (y * zoomSlider.getScale()),
+                (int) (diamDrawTarget * zoomSlider.getScale()),
+                (int) (diamDrawTarget * zoomSlider.getScale()));
         g.setColor(Color.BLACK);
-        drawOval(g, x, y, diamDrawTarget, diamDrawTarget);
+        drawOval((Graphics) g, (int) (x * zoomSlider.getScale()), (int) (y * zoomSlider.getScale()),
+                (int) (diamDrawTarget * zoomSlider.getScale()),
+                (int) (diamDrawTarget * zoomSlider.getScale()));
     }
 
     private void drawLets(Graphics2D g) {
         for (Point point : towers) {
             g.setColor(Color.GRAY);
-            fillOval(g, point.x, point.y, diamDrawTarget, diamDrawTarget);
+            fillOval((Graphics) g, (int) (point.x * zoomSlider.getScale()),
+                    (int) (point.y * zoomSlider.getScale()),
+                    (int) (diamDrawTarget * zoomSlider.getScale()),
+                    (int) (diamDrawTarget * zoomSlider.getScale()));
             g.setColor(Color.BLACK);
-            drawOval(g, point.x, point.y, diamDrawTarget, diamDrawTarget);
+            drawOval((Graphics) g, (int) (point.x * zoomSlider.getScale()),
+                    (int) (point.y * zoomSlider.getScale()),
+                    (int) (diamDrawTarget * zoomSlider.getScale()),
+                    (int) (diamDrawTarget * zoomSlider.getScale()));
         }
     }
 
@@ -216,6 +237,8 @@ public class GameVisualizer extends JPanel implements ActionListener {
         screenHeight = getHeight() * 2;
         screenWight = getWidth() * 2;
         Graphics2D g2d = (Graphics2D) g;
+        g2d.scale(zoomSlider.getScale(), zoomSlider.getScale());
+
         drawRobot(g2d, (int) robotPosition.getX(), (int) robotPosition.getY(), robotDirection);
         drawTarget(g2d, (int) targetPosition.getX(), (int) targetPosition.getY());
         drawGameTarget(g2d, gameTargetPosition.x, gameTargetPosition.y);
@@ -224,11 +247,14 @@ public class GameVisualizer extends JPanel implements ActionListener {
         ArrayList<Point> bulletsCopy = new ArrayList<>(bullets);
         g.setColor(Color.GRAY);
         for (Point bullet : bulletsCopy) {
-            fillOval(g, bullet.x, bullet.y, diamBullet, diamBullet);
+            fillOval(g, bullet.x, bullet.y, (int) (diamBullet * zoomSlider.getScale()),
+                    (int) (diamBullet * zoomSlider.getScale()));
         }
         positionTargetNow.setLocation(gameTargetPosition.getLocation());
         positionRobotNow.setLocation(robotPosition.getLocation());
-        endGameHandling.checkGameState(robotPosition, gameTargetPosition, bullets);
+
+
+        endGameHandling.checkGameState(robotPosition, gameTargetPosition, bullets, zoomSlider.getScale());
     }
 
     private static void fillOval(Graphics g, int centerX, int centerY, int diam1, int diam2) {
@@ -243,22 +269,28 @@ public class GameVisualizer extends JPanel implements ActionListener {
         AffineTransform t = AffineTransform.getRotateInstance(direction, x, y);
         g.setTransform(t);
         g.setColor(Color.MAGENTA);
-        fillOval(g, x, y, diamDrawTarget, diamBlackConst);
+        fillOval((Graphics) g, x, y, (int) (diamDrawTarget * zoomSlider.getScale()),
+                (int) (diamBlackConst * zoomSlider.getScale()));
         g.setColor(Color.BLACK);
-        drawOval(g, x, y, diamDrawTarget, diamWhiteConst);
+        drawOval((Graphics) g, x, y, (int) (diamDrawTarget * zoomSlider.getScale()),
+                (int) (diamWhiteConst * zoomSlider.getScale()));
         g.setColor(Color.WHITE);
-        fillOval(g, x + diamWhiteConst, y, diamTarget, diamTarget);
+        fillOval((Graphics) g, (int) (x + diamWhiteConst * zoomSlider.getScale()),
+                y, (int) (diamTarget * zoomSlider.getScale()), (int) (diamTarget * zoomSlider.getScale()));
         g.setColor(Color.BLACK);
-        drawOval(g, x + diamBlackConst, y, diamTarget, diamTarget);
+        drawOval((Graphics) g, (int) (x + diamBlackConst * zoomSlider.getScale()),
+                y, (int) (diamTarget * zoomSlider.getScale()), (int) (diamTarget * zoomSlider.getScale()));
     }
 
     private void drawTarget(Graphics2D g, int x, int y) {
         AffineTransform t = AffineTransform.getRotateInstance(0, 0, 0);
         g.setTransform(t);
         g.setColor(Color.GREEN);
-        fillOval(g, x, y, diamTarget, diamTarget);
+        fillOval((Graphics) g, x, y, (int) (diamTarget * zoomSlider.getScale()),
+                (int) (diamTarget * zoomSlider.getScale()));
         g.setColor(Color.BLACK);
-        drawOval(g, x, y, diamTarget, diamTarget);
+        drawOval((Graphics) g, x, y, (int) (diamTarget * zoomSlider.getScale()),
+                (int) (diamTarget * zoomSlider.getScale()));
     }
 
     @Override
@@ -266,11 +298,11 @@ public class GameVisualizer extends JPanel implements ActionListener {
         onRedrawEvent();
     }
 
-    public static Point getPositionRobot(){
+    public static Point getPositionRobot() {
         return positionRobotNow;
     }
 
-    public static Point getPositionTarget(){
+    public static Point getPositionTarget() {
         return positionTargetNow;
     }
 

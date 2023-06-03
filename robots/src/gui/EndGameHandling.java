@@ -31,7 +31,6 @@ public class EndGameHandling {
         try {
             Profile.Section modelSection = new Ini(new File("config.ini")).get("model");
             timeOutBullet = modelSection.get("timeOutBullet", Integer.class);
-            timeOutAttack = modelSection.get("timeOutAttack", Integer.class);
             bulletSpeed = modelSection.get("bulletSpeed", Integer.class);
             startTimeBullet = modelSection.get("startTimeBullet", Integer.class);
             startTimeAttack = modelSection.get("startTimeAttack", Integer.class);
@@ -50,10 +49,15 @@ public class EndGameHandling {
 
     private Map<String, Boolean> gameState = new HashMap<>();
 
-    public void checkGameState(Point robotPosition, Point gameTargetPosition, ArrayList<Point> bullets) {
+    public void checkGameState(Point robotPosition, Point gameTargetPosition, ArrayList<Point> bullets, double zoom) {
+        int newGameTargetX = (int) (gameTargetPosition.getX() * zoom);
+        int newGameTargetY = (int) (gameTargetPosition.getY() * zoom);
+        Point newGameTargetPosition = new Point(newGameTargetX, newGameTargetY);
+
         checkLose(robotPosition, bullets);
-        checkWin(robotPosition, gameTargetPosition);
+        checkWin(robotPosition, newGameTargetPosition);
     }
+
 
     private void checkLose(Point robotPosition, ArrayList<Point> bullets) {
         for (Point bullet : bullets) {
@@ -83,36 +87,34 @@ public class EndGameHandling {
         return distance <= diameter;
     }
 
-    public static void shootBullets(ArrayList<Point> towers, ArrayList<Point> bullets) {
+    public static void shootBullets(ArrayList<Point> towers, ArrayList<Point> bullets, double zoom) {
 
         ScheduledExecutorService bulletScheduler = Executors.newScheduledThreadPool(towers.size());
 
         for (Point let : towers) {
-            bulletScheduler.scheduleAtFixedRate(() -> {
-                double bulletDirection = Math.random() * 2 * Math.PI;
 
-                Point bullet = new Point(let.x, let.y);
-                bullets.add(bullet);
+            double bulletDirection = Math.random() * 2 * Math.PI;
 
-                ScheduledExecutorService bulletMoveScheduler = Executors.newScheduledThreadPool(threadPoolBullet);
-                bulletMoveScheduler.scheduleAtFixedRate(() -> {
+            Point bullet = new Point((int) (let.x * zoom), (int) (let.y * zoom));
+            bullets.add(bullet);
 
-                    int bulletX = bullet.x;
-                    int bulletY = bullet.y;
+            ScheduledExecutorService bulletMoveScheduler = Executors.newScheduledThreadPool(threadPoolBullet);
+            bulletMoveScheduler.scheduleAtFixedRate(() -> {
 
-                    bulletX += (int) (bulletSpeed * Math.cos(bulletDirection));
-                    bulletY += (int) (bulletSpeed * Math.sin(bulletDirection));
+                int bulletX = bullet.x;
+                int bulletY = bullet.y;
 
-                    bullet.setLocation(bulletX, bulletY);
+                bulletX += (int) (bulletSpeed * Math.cos(bulletDirection));
+                bulletY += (int) (bulletSpeed * Math.sin(bulletDirection));
 
-                    if (bulletX < minCordBullet || bulletX > maxCordBullet ||
-                            bulletY < minCordBullet || bulletY > maxCordBullet) {
-                        bullets.remove(bullet);
-                        bulletMoveScheduler.shutdown();
-                    }
+                bullet.setLocation(bulletX, bulletY);
 
-                }, startTimeBullet, timeOutBullet, TimeUnit.MILLISECONDS);
-            }, startTimeAttack, timeOutAttack, TimeUnit.SECONDS);
+                if (bulletX < minCordBullet || bulletX > maxCordBullet ||
+                        bulletY < minCordBullet || bulletY > maxCordBullet) {
+                    bullets.remove(bullet);
+                    bulletMoveScheduler.shutdown();
+                }
+            }, startTimeBullet, timeOutBullet, TimeUnit.MILLISECONDS);
         }
     }
 }
